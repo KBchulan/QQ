@@ -151,3 +151,39 @@ std::shared_ptr<User> UserManager::getUserByUsername(const std::string& username
     mysql_free_result(result);
     return nullptr;
 }
+
+std::shared_ptr<User> UserManager::getUser(int64_t userId) {
+    // 先从在线用户缓存中查找
+    {
+        std::lock_guard<std::mutex> lock(usersMutex_);
+        auto it = onlineUsers_.find(userId);
+        if (it != onlineUsers_.end()) {
+            return it->second;
+        }
+    }
+
+    // 如果不在缓存中，从数据库查询
+    std::stringstream ss;
+    ss << "SELECT user_id, username, nickname, status, last_login "
+       << "FROM users WHERE user_id = " << userId;
+
+    MYSQL_RES* result = DatabaseManager::getInstance().executeQueryWithResult(ss.str());
+    if (!result) {
+        LOG_ERROR("查询用户失败: " + std::to_string(userId));
+        return nullptr;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(result);
+    if (row) {
+        auto user = std::make_shared<User>();
+        user->setUserId(std::stoll(row[0]));
+        user->setUsername(row[1]);
+        user->setNickname(row[2] ? row[2] : row[1]);
+        user->setOnline(std::stoi(row[3]) != 0);
+        mysql_free_result(result);
+        return user;
+    }
+
+    mysql_free_result(result);
+    return nullptr;
+}

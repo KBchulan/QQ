@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include <mutex>
-#include "User.h"
+#include "../core/User.h"
 #include "DatabaseManager.h"
 
 class UserManager {

@@ -2,6 +2,8 @@
 #include "Logger.h"
 #include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <openssl/evp.h>
 
 DatabaseManager::~DatabaseManager() {
     if (conn_) {
@@ -44,15 +46,24 @@ bool DatabaseManager::storeMessage(const Message& msg) {
 }
 
 bool DatabaseManager::authenticateUser(const std::string& username,
-                                     const std::string& password_hash,
+                                     const std::string& password,
                                      int64_t& userId) {
+    LOG_INFO("验证用户登录 - 用户名: " + username);
+    
+    // 对密码进行哈希
+    std::string passwordHash = hashPassword(password);
+    LOG_INFO("密码哈希值: " + passwordHash);
+
+    // 转义用户名以防SQL注入
+    char escaped_username[username.length() * 2 + 1];
+    mysql_real_escape_string(conn_, escaped_username, username.c_str(), username.length());
+
     std::stringstream ss;
-    ss << "SELECT user_id, username FROM users WHERE "
-       << "username='" << username << "' AND "
-       << "password_hash='" << password_hash << "'";
-
-    LOG_INFO("执行登录验证SQL: " + ss.str());
-
+    ss << "SELECT user_id, password_hash FROM users WHERE username = '" 
+       << escaped_username << "'";
+    
+    LOG_INFO("执行SQL: " + ss.str());
+    
     MYSQL_RES* result = nullptr;
     if (mysql_query(conn_, ss.str().c_str()) != 0) {
         LOG_ERROR("认证查询失败: " + std::string(mysql_error(conn_)));
@@ -67,24 +78,65 @@ bool DatabaseManager::authenticateUser(const std::string& username,
 
     MYSQL_ROW row = mysql_fetch_row(result);
     if (row) {
-        userId = std::stoll(row[0]);
-        mysql_free_result(result);
+        std::string storedHash = row[1];
+        LOG_INFO("数据库中的密码哈希: " + storedHash);
         
-        // 更新用户状态和最后登录时间
-        std::stringstream updateSs;
-        updateSs << "UPDATE users SET status = 1, last_login = NOW() "
-                << "WHERE user_id = " << userId;
-        if (mysql_query(conn_, updateSs.str().c_str()) != 0) {
-            LOG_WARNING("更新用户状态失败: " + std::string(mysql_error(conn_)));
+        if (storedHash == passwordHash) {
+            userId = std::stoll(row[0]);
+            mysql_free_result(result);
+            LOG_INFO("密码验证成功，用户ID: " + std::to_string(userId));
+            return true;
+        } else {
+            LOG_WARNING("密码不匹配");
         }
-        
-        LOG_INFO("用户 " + username + " (ID: " + std::to_string(userId) + ") 认证成功");
-        return true;
+    } else {
+        LOG_WARNING("用户名不存在: " + username);
     }
 
     mysql_free_result(result);
-    LOG_WARNING("用户 " + username + " 认证失败");
     return false;
+}
+
+std::string DatabaseManager::hashPassword(const std::string& password) {
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int hashLen;
+
+    // 使用新的EVP接口
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) {
+        LOG_ERROR("创建EVP上下文失败");
+        return "";
+    }
+
+    if (EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr) != 1) {
+        LOG_ERROR("初始化SHA256失败");
+        EVP_MD_CTX_free(ctx);
+        return "";
+    }
+
+    if (EVP_DigestUpdate(ctx, password.c_str(), password.length()) != 1) {
+        LOG_ERROR("更新哈希数据失败");
+        EVP_MD_CTX_free(ctx);
+        return "";
+    }
+
+    if (EVP_DigestFinal_ex(ctx, hash, &hashLen) != 1) {
+        LOG_ERROR("生成最终哈希失败");
+        EVP_MD_CTX_free(ctx);
+        return "";
+    }
+
+    EVP_MD_CTX_free(ctx);
+
+    // 转换为十六进制字符串
+    std::stringstream ss;
+    for(unsigned int i = 0; i < hashLen; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+    }
+    
+    std::string result = ss.str();
+    LOG_INFO("生成密码哈希: " + result);
+    return result;
 }
 
 bool DatabaseManager::executeQuery(const std::string& query) {

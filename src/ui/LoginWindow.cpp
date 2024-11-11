@@ -91,6 +91,9 @@ LoginWindow::LoginWindow(SDL_Renderer* renderer, int width, int height)
     textColor_ = {0, 0, 0, 255};            // 黑色文本
     buttonColor_ = {0, 120, 215, 255};      // 蓝色按钮
     buttonHoverColor_ = {0, 102, 204, 255}; // 深蓝色悬停
+
+    // 初始化错误消息颜色
+    errorColor_ = {255, 0, 0, 255};  // 红色
 }
 
 LoginWindow::~LoginWindow() {
@@ -129,6 +132,17 @@ void LoginWindow::render() {
     
     renderButton(loginButton_, "登录", loginHovered);
     renderButton(registerButton_, "注册", registerHovered);
+
+    // 渲染错误消息（在密码框右边）
+    if (!errorMessage_.empty()) {
+        SDL_Rect errorRect = {
+            passwordBox_.x + passwordBox_.w + 10,  // 密码框右边10像素
+            passwordBox_.y,                        // 与密码框同高
+            200,                                   // 固定宽度
+            passwordBox_.h                         // 与密码框同高
+        };
+        renderText(errorMessage_, errorRect, errorColor_);
+    }
 }
 
 void LoginWindow::renderText(const std::string& text, const SDL_Rect& rect, const SDL_Color& color) {
@@ -161,7 +175,7 @@ void LoginWindow::renderTextBox(const SDL_Rect& box, const std::string& text, bo
     // 绘制文本
     std::string displayText = isPassword ? std::string(text.length(), '*') : text;
     if (!displayText.empty()) {
-        // 计算文本大小
+        // 计算文大小
         int textWidth, textHeight;
         TTF_SizeText(font_, displayText.c_str(), &textWidth, &textHeight);
         
@@ -358,18 +372,18 @@ bool LoginWindow::attemptLogin() {
                         receivedResponse = true;
                         loginSuccess = responseData["success"].asBool();
                         if (loginSuccess) {
-                            // 创建用户对象
+                            // 创建用户对象并保存更多信息
                             loggedInUser_ = std::make_shared<User>();
                             loggedInUser_->setUserId(responseData["userId"].asInt64());
-                            loggedInUser_->setUsername(username_);
+                            loggedInUser_->setUsername(username_);  // 使用输入的用户名
+                            loggedInUser_->setNickname(username_);  // 暂时使用用户名作为昵称
+                            loggedInUser_->setOnline(true);
                             loginSuccess_ = true;
-                            std::cout << "登录成功: " << username_ 
-                                    << ", userId: " << loggedInUser_->getUserId() << std::endl;
+                            std::cout << "登录成功: " << username_ << ", userId: " 
+                                     << loggedInUser_->getUserId() << std::endl;
                         } else {
-                            std::cout << "登录失败: " << responseData["error"].asString() << std::endl;
+                            errorMessage_ = responseData["error"].asString();
                         }
-                    } else {
-                        std::cout << "解析响应数据失败" << std::endl;
                     }
                 }
             }

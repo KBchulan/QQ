@@ -18,6 +18,15 @@ enum class MessageType {
     ERROR,          // 错误消息
     HEARTBEAT,      // 心跳消息
     REGISTER_RESPONSE,  // 注册响应
+    CHAT,                    // 聊天消息
+    GET_CHAT_HISTORY,        // 获取聊天历史请求
+    CHAT_HISTORY_RESPONSE,   // 聊天历史响应
+    GET_FRIEND_LIST,         // 获取好友列表请求
+    FRIEND_LIST_RESPONSE,    // 好友列表响应
+    FRIEND_REQUEST,          // 好友请求
+    FRIEND_REQUEST_NOTIFICATION,  // 好友请求通知
+    FRIEND_REQUEST_RESPONSE,      // 好友请求响应
+    FRIEND_RESPONSE              // 好友请求响应
 };
 
 class Message {

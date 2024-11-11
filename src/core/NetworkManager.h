@@ -16,35 +16,21 @@ private:
     bool isConnected_;
     std::queue<Message> receivedMessages_;
     std::mutex receiveMutex_;
-    
     uint32_t messageLength_;
     std::vector<char> messageBuffer_;
+    bool shouldStop_;
 
 public:
-    NetworkManager();
-    ~NetworkManager();
+    NetworkManager() : socket_(io_context_), isConnected_(false), shouldStop_(false) {}
+    ~NetworkManager() { disconnect(); }
 
     bool connect(const std::string& host, int port);
     bool disconnect();
     bool isConnected() const { return isConnected_; }
-    
     void sendMessage(const Message& msg);
     void startReceiving();
-
-    bool hasMessage() {
-        std::lock_guard<std::mutex> lock(receiveMutex_);
-        return !receivedMessages_.empty();
-    }
-
-    Message getNextMessage() {
-        std::lock_guard<std::mutex> lock(receiveMutex_);
-        if (receivedMessages_.empty()) {
-            return Message();
-        }
-        Message msg = receivedMessages_.front();
-        receivedMessages_.pop();
-        return msg;
-    }
+    bool hasMessage();
+    Message getNextMessage();
 
 private:
     void handleSend(const boost::system::error_code& error, size_t bytes_transferred);

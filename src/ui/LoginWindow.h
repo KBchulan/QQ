@@ -6,7 +6,7 @@
 #include <opencv4/opencv2/opencv.hpp>
 #include <string>
 #include <memory>
-#include "../server/User.h"
+#include "../core/User.h"
 #include "../core/NetworkManager.h"
 
 class LoginWindow {
@@ -47,6 +47,9 @@ private:
 
     bool showRegister_;
 
+    std::string errorMessage_;
+    SDL_Color errorColor_;
+
 public:
     LoginWindow(SDL_Renderer* renderer, int width, int height);
     ~LoginWindow();
@@ -61,6 +64,8 @@ public:
         showRegister_ = false;
         loginSuccess_ = false;
     }
+
+    std::shared_ptr<NetworkManager> getNetworkManager() { return networkManager_; }
 
 private:
     void renderText(const std::string& text, const SDL_Rect& rect, const SDL_Color& color);

@@ -40,4 +40,5 @@ private:
     void processMessage(const Message& msg);
     void sendRegistrationResponse(bool success, const std::string& error);
     void sendLoginResponse(bool success, const std::string& error, int64_t userId);
+    void sendFriendRequestResponse(bool success, const std::string& error, int64_t userId);
 }; 

@@ -10,6 +10,8 @@
 #include <memory>
 #include <vector>
 #include "../core/Message.h"
+#include "UserManager.h"
+#include "Logger.h"
 
 class DatabaseManager {
 private:
@@ -47,4 +49,7 @@ public:
     std::string getLastError() const { return mysql_error(conn_); }
 
     MYSQL* getConnection() { return conn_; }
+
+private:
+    std::string hashPassword(const std::string& password);
 }; 

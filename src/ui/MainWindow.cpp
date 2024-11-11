@@ -7,15 +7,16 @@ MainWindow::MainWindow(const std::string& title, int width, int height)
     , isLoggedIn_(false)
     , isRegistering_(false)
     , width_(width)
-    , height_(height) {
+    , height_(height)
+    , networkManager_(std::make_shared<NetworkManager>()) {
     
     if (!init()) {
         throw std::runtime_error("Failed to initialize MainWindow");
     }
 
-    loginWindow_ = std::make_unique<LoginWindow>(renderer_, width, height);
-    chatWindow_ = std::make_unique<ChatWindow>(renderer_, width, height);
-    registerWindow_ = std::make_unique<RegisterWindow>(renderer_, width, height);
+    loginWindow_ = std::make_shared<LoginWindow>(renderer_, width, height);
+    chatWindow_ = std::make_shared<ChatWindow>(renderer_, width, height);
+    registerWindow_ = std::make_shared<RegisterWindow>(renderer_, width, height);
 }
 
 bool MainWindow::init() {
@@ -82,22 +83,36 @@ void MainWindow::run() {
 }
 
 void MainWindow::handleEvent(SDL_Event& event) {
+    if (event.type == SDL_WINDOWEVENT) {
+        if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+            // 获取新的窗口大小
+            SDL_GetWindowSize(window_, &width_, &height_);
+        }
+    } else if (event.type == SDL_KEYDOWN) {
+        // 按F11切换全屏
+        if (event.key.keysym.sym == SDLK_F11) {
+            static bool isFullscreen = false;
+            isFullscreen = !isFullscreen;
+            SDL_SetWindowFullscreen(window_, isFullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+        }
+    }
+
+    // 处理其他事件
     if (isLoggedIn_) {
         chatWindow_->handleEvent(event);
     } else if (isRegistering_) {
         registerWindow_->handleEvent(event);
-        if (registerWindow_->isRegistrationSuccessful()) {
-            switchToLogin();
-        } else if (registerWindow_->shouldBackToLogin()) {
+        if (registerWindow_->isRegistrationSuccessful() || 
+            registerWindow_->shouldBackToLogin()) {
             switchToLogin();
         }
     } else {
         loginWindow_->handleEvent(event);
         if (loginWindow_->isLoginSuccessful()) {
             switchToChat();
-        } else if (loginWindow_->shouldShowRegister()) {
+        }
+        if (loginWindow_->shouldShowRegister()) {
             switchToRegister();
-            loginWindow_->resetRegisterFlag();
         }
     }
 }
@@ -119,7 +134,15 @@ void MainWindow::render() {
 
 void MainWindow::switchToChat() {
     isLoggedIn_ = true;
-    chatWindow_->setUser(loginWindow_->getLoggedInUser());
+    isRegistering_ = false;
+    
+    // 获取登录窗口的NetworkManager和用户信息
+    networkManager_ = loginWindow_->getNetworkManager();
+    auto user = loginWindow_->getLoggedInUser();
+    
+    // 设置聊天窗口的NetworkManager和用户信息
+    chatWindow_->setNetworkManager(networkManager_);
+    chatWindow_->setUser(user);
 }
 
 void MainWindow::switchToRegister() {

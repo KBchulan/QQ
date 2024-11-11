@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <ctime>
 
@@ -10,21 +11,26 @@ private:
     std::string avatarUrl_;
     bool online_;
     std::time_t lastLoginTime_;
+    std::time_t createdAt_;
 
 public:
     User() : userId_(0), online_(false) {}
     
-    void setUserId(int64_t id) { userId_ = id; }
-    void setUsername(const std::string& username) { username_ = username; }
-    void setNickname(const std::string& nickname) { nickname_ = nickname; }
-    void setAvatarUrl(const std::string& url) { avatarUrl_ = url; }
-    void setOnline(bool online) { online_ = online; }
-    void setLastLoginTime(std::time_t time) { lastLoginTime_ = time; }
-
+    // Getters
     int64_t getUserId() const { return userId_; }
     const std::string& getUsername() const { return username_; }
     const std::string& getNickname() const { return nickname_; }
     const std::string& getAvatarUrl() const { return avatarUrl_; }
     bool isOnline() const { return online_; }
     std::time_t getLastLoginTime() const { return lastLoginTime_; }
+    std::time_t getCreatedAt() const { return createdAt_; }
+
+    // Setters
+    void setUserId(int64_t id) { userId_ = id; }
+    void setUsername(const std::string& username) { username_ = username; }
+    void setNickname(const std::string& nickname) { nickname_ = nickname; }
+    void setAvatarUrl(const std::string& url) { avatarUrl_ = url; }
+    void setOnline(bool online) { online_ = online; }
+    void setLastLoginTime(std::time_t time) { lastLoginTime_ = time; }
+    void setCreatedAt(std::time_t time) { createdAt_ = time; }
 }; 

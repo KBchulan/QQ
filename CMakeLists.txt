@@ -29,6 +29,8 @@ add_executable(qq_server
     src/server/Logger.cpp
     src/server/Config.cpp
     src/server/UserManager.cpp
+    src/server/MessageManager.cpp
+    src/server/FriendManager.cpp
     src/core/Message.cpp
 )
 
@@ -69,12 +71,14 @@ target_link_libraries(qq_client
 target_include_directories(qq_server
     PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/core
     ${MYSQL_INCLUDE_DIRS}
 )
 
 target_include_directories(qq_client
     PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/core
 )
 
 # 打印MySQL信息用于调试

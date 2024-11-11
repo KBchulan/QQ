@@ -8,21 +8,22 @@
 #include "LoginWindow.h"
 #include "ChatWindow.h"
 #include "RegisterWindow.h"
+#include "../core/NetworkManager.h"
 
 class MainWindow {
 private:
     SDL_Window* window_;
     SDL_Renderer* renderer_;
-    std::unique_ptr<LoginWindow> loginWindow_;
-    std::unique_ptr<ChatWindow> chatWindow_;
-    std::unique_ptr<RegisterWindow> registerWindow_;
+    std::shared_ptr<LoginWindow> loginWindow_;
+    std::shared_ptr<ChatWindow> chatWindow_;
+    std::shared_ptr<RegisterWindow> registerWindow_;
+    std::shared_ptr<NetworkManager> networkManager_;
     bool isLoggedIn_;
     bool isRegistering_;
     int width_;
     int height_;
 
 public:
-    MainWindow() = default;
     MainWindow(const std::string& title, int width, int height);
     ~MainWindow();
 
